@@ -13,13 +13,12 @@ import xlrd
 import pandas as pd
 #import traceback
 
-client = MongoClient('localhost', 27017)
-db = client.fintech
-templateCollection  = db.template
-invoiceCollection = db.invoice
-fraudCollection = db.fraud
-#print(templateCollection.find_one({'_id': ObjectId("600c5cd07e03a162d98eb1e5")}))
-class CommodityPricing:
+client = MongoClient('localhost', 27017)  #accessing the monogdb database
+db = client.fintech #our main database is called fintech
+templateCollection  = db.template #collection to store templates
+invoiceCollection = db.invoice #collection to store approved invoices
+fraudCollection = db.fraud #collection to store fraud invoices
+class CommodityPricing: #this class scrapes data of picing for all the commodities and stores it in a csv file
 	#This class modified from https://github.com/datasets/commodity-prices/blob/master/scripts/process.py
 
 	source = 'http://www.imf.org/external/np/res/commod/External_Data.xls'
@@ -129,7 +128,7 @@ class CommodityPricing:
 							csv_row.append(price)
 					csvwriter.writerow(csv_row)
 			
-class Template:
+class Template: #template object stores location of different parts of the template to be parsed
 	def __init__(self , path):
 
 		self.image = cv2.imread(path)
@@ -149,21 +148,21 @@ class Template:
 
 
 
-def parseInvoice(path, templateID): 
+def parseInvoice(path, templateID):  #parsing invoicing
 	dictionary={}
 	if(isinstance(path,str)):
-		image = cv2.imread(path)
+		image = cv2.imread(path) #if a path is provided, load the corresponding image
 	else:
-		image = cv2.imdecode(np.fromstring(path.read(), np.uint8), 1)
+		image = cv2.imdecode(np.fromstring(path.read(), np.uint8), 1) #if an image is provided, convert it to opencv compatible format
 		#image = path
-	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 ))
-	template = templateCollection.find_one({'_id': ObjectId(templateID)})
-	boxes =[]
-	names = []
-	fraudList=[]
+	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 )) #resize it for uniformity
+	template = templateCollection.find_one({'_id': ObjectId(templateID)}) #Obtain the template data from the templatecollection to parse invoice
+	boxes =[] #location of template to be parsed
+	names = [] #different labels for the location such as iron, copper, total, tax etc
+	fraudList=[] #list of under-invoicing / overinvoicing
 	fraud = False
 	for i in template:
-		if i !='_id':
+		if i !='_id': #parse only the data and not the primary key
 			names.append(i)
 			boxes.append(template[i])
 	#print(names, boxes)
@@ -173,30 +172,30 @@ def parseInvoice(path, templateID):
 		#print(dictionary)
 		print(dictionary)
 		try:
-			fraud = comparePrice(names[idx], float(dictionary[names[idx]]))
+			fraud = comparePrice(names[idx], float(dictionary[names[idx]])) #compare prices of commodities with the excel sheet
 		except:
 			pass
 		if fraud == True:
 			fraudList.append(names[idx])
 
-	if len(fraudList) ==0:
-		fraud= False
+	if len(fraudList) ==0: #no fraud if fraud list is empty
+		fraud= False 
 	else:
 		fraud=True
 	print("fraud Commodities: " , fraudList)
 		
 
 
-	if (invoiceCollection.find_one({'0':dictionary.get('0',None)})==None or invoiceCollection.find_one({'id':dictionary.get('id')})==None )and fraud==False: #verifies invoice
+	if (invoiceCollection.find_one({'0':dictionary.get('0',None)})==None or invoiceCollection.find_one({'id':dictionary.get('id')})==None )and fraud==False: #verifies invoice based on duplication and fraud
 		invoiceCollection.insert_one(dictionary)
 		return True, dictionary, "Potential Fraud: "+str(fraudList)
-	else:
+	else: #no fraud and no duplication
 		fraudCollection.insert_one(dictionary)
 		return False, dictionary,"Potential Fraud: "+ str(fraudList)
 
 def comparePrice(commodity, price):
 	table = pd.read_csv("data/commodity-prices.csv")
-	for i in table.keys():
+	for i in table.keys(): #compares from the table
 		if commodity in i and commodity!="id":
 			commodity = i 
 			break
@@ -209,7 +208,7 @@ def comparePrice(commodity, price):
 		return True
 	return False
 
-def setTemplate(path):
+def setTemplate(path): #this is to define the template which can be used to parse several invoices
 
 	image = cv2.imread(path)
 	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 ))
@@ -220,22 +219,22 @@ def setTemplate(path):
 	while(True):	
 		
 	
-		box = cv2.selectROI("roi", image,False)
+		box = cv2.selectROI("roi", image,False) #selecting the ROI for the different boxes
 		
 		if( box[2:]!=(0,0)):
 			temp.addField(box, str(count))
 			count+=1
 			
 
-		if cv2.waitKey(0) ==ord('q'):
+		if cv2.waitKey(0) ==ord('q'): #close it by pressing q
 
 			break
 
 	root = tk.Tk()
 	root.geometry("400x240")
-	root.title("Enter the names of the boxes seperated by commas and then close")
+	root.title("Enter the names of the boxes seperated by commas and then close") #obtain the labels for all the boxes we annotated such as Copper, Coffee, Tax , id etc
 	
-	def getTextInput():
+	def getTextInput(): #parse the text
 	    result=textExample.get("1.0","end")
 	    result = result.strip().split(",")
 	    textExample.delete("1.0","end")
@@ -252,31 +251,21 @@ def setTemplate(path):
 
 	btnRead.pack()
 
-	root.mainloop()
-	#print(dict(zip(temp.names, temp.boxes)))
+	root.mainloop() #GUI
 	templateCollection.insert_one(dict(zip(temp.names, temp.boxes))) 
-	temp.ObjectId = ObjectId(templateCollection.find_one(dict(zip(temp.names, temp.boxes)))['_id'])
-	#print(temp.ObjectId)
+	temp.ObjectId = ObjectId(templateCollection.find_one(dict(zip(temp.names, temp.boxes)))['_id']) #Set the template objects Object ID from the table. This Uniquely identifies it
+
 	return temp
 
 
-if 'archive' not in os.listdir():
+if 'archive' not in os.listdir(): #if the data for commodity pricing has not been scraped, please scrape it
 	cp = CommodityPricing()
 	cp.setup()
 	cp.retrieve()
 	cp.process()
 
-#print(comparePrice('Crude Oil',20))
-temp=setTemplate("demotemplate.png")
+
+#temp=setTemplate("demotemplate.png") #Uncommend and run this if you want to set the template
 
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-'''
-for invoice in os.listdir("invoices"):
-#	print(invoice)
-	try:
-		print(parseInvoice("invoices/"+invoice, temp.ObjectId))
-	except:
-		print("fail")
-		pass
-'''
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  #Tesseract is our OCR parser 
