@@ -258,14 +258,20 @@ def setTemplate(path): #this is to define the template which can be used to pars
 	return temp
 
 
-if 'archive' not in os.listdir(): #if the data for commodity pricing has not been scraped, please scrape it
-	cp = CommodityPricing()
-	cp.setup()
-	cp.retrieve()
-	cp.process()
-
-
-#temp=setTemplate("demotemplate.png") #Uncommend and run this if you want to set the template
-
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'  #Tesseract is our OCR parser 
+if __name__ =="__main__":
+	print("please enter image path")
+	path  = input()
+	path = path.strip()
+	print("you have selected ", path)
+	temp=setTemplate(path) #Uncomment and run this if you want to set the template
+	print("your unique object ID is: ",temp.ObjectId)
+	if 'archive' not in os.listdir(): #if the data for commodity pricing has not been scraped, please scrape it
+		cp = CommodityPricing()
+		cp.setup()
+		cp.retrieve()
+		cp.process()
+
+
+
