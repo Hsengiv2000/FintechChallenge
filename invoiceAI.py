@@ -267,7 +267,7 @@ if 'archive' not in os.listdir():
 	cp.process()
 
 #print(comparePrice('Crude Oil',20))
-#temp=setTemplate("demotemplate.png")
+temp=setTemplate("demotemplate.png")
 
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
