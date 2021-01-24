@@ -172,7 +172,10 @@ def parseInvoice(path, templateID):
 		dictionary[names[idx]]= pytesseract.image_to_string(image[int(i[1]):int(i[1]+i[3]), int(i[0]):int(i[0]+i[2])]).strip().replace("$","").replace("," , "").replace("}","").replace("{","").replace("&" , "")
 		#print(dictionary)
 		print(dictionary)
-		fraud = comparePrice(names[idx], float(dictionary[names[idx]]))
+		try:
+			fraud = comparePrice(names[idx], float(dictionary[names[idx]]))
+		except:
+			pass
 		if fraud == True:
 			fraudList.append(names[idx])
 
@@ -186,10 +189,10 @@ def parseInvoice(path, templateID):
 
 	if (invoiceCollection.find_one({'0':dictionary.get('0',None)})==None or invoiceCollection.find_one({'id':dictionary.get('id')})==None )and fraud==False: #verifies invoice
 		invoiceCollection.insert_one(dictionary)
-		return True, dictionary
+		return True, dictionary, "Potential Fraud: "+str(fraudList)
 	else:
 		fraudCollection.insert_one(dictionary)
-		return False, dictionary
+		return False, dictionary,"Potential Fraud: "+ str(fraudList)
 
 def comparePrice(commodity, price):
 	table = pd.read_csv("data/commodity-prices.csv")
@@ -264,7 +267,7 @@ if 'archive' not in os.listdir():
 	cp.process()
 
 #print(comparePrice('Crude Oil',20))
-#temp=setTemplate("template.png")
+#temp=setTemplate("demotemplate.png")
 
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
