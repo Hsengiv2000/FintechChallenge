@@ -13,8 +13,12 @@ A correct result returns the message "True" along with the parsed values of each
 
 ## Duplicate Invoice
 When an invoice is duplicated (it already exists in the database) the API will return "False" indicating potential fraud and suggesting further inspection.
+
+
 ![Pic4](https://github.com/Hsengiv2000/FintechChallenge/blob/main/Gallery/fraudresult.PNG)
 
 ## Duplicate Invoice
 When an invoice overstates commodity prices, the API will return "False" indicating potential fraud and suggesting further inspection.
+
+
 ![Pic5](https://github.com/Hsengiv2000/FintechChallenge/blob/main/Gallery/fraudtransaction.PNG)
