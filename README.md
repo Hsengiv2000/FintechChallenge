@@ -9,6 +9,13 @@ A simple and intuitive GUI is provided to upload invoice templates for the syste
 
 ## Correct Result
 A correct result returns the message "True" along with the parsed values of each item in the invoice.
+
+We will test it out on this correct invoice.
+
+![Pic3](https://github.com/Hsengiv2000/FintechChallenge/blob/main/invoices/demoinvoice.png)
+
+The API called on the above particular invoice yields the below result.
+
 ![Pic3](https://github.com/Hsengiv2000/FintechChallenge/blob/main/Gallery/correctresult.PNG)
 
 ## Duplicate Invoice
