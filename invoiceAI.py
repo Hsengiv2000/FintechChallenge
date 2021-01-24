@@ -18,7 +18,7 @@ db = client.fintech
 templateCollection  = db.template
 invoiceCollection = db.invoice
 fraudCollection = db.fraud
-print(templateCollection.find_one({'_id': ObjectId("600c5cd07e03a162d98eb1e5")}))
+#print(templateCollection.find_one({'_id': ObjectId("600c5cd07e03a162d98eb1e5")}))
 class CommodityPricing:
 	#This class modified from https://github.com/datasets/commodity-prices/blob/master/scripts/process.py
 
@@ -152,6 +152,7 @@ class Template:
 def parseInvoice(path, templateID): 
 	dictionary={}
 	image = cv2.imread(path)
+	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 ))
 	template = templateCollection.find_one({'_id': ObjectId(templateID)})
 	boxes =[]
 	names = []
@@ -161,12 +162,13 @@ def parseInvoice(path, templateID):
 		if i !='_id':
 			names.append(i)
 			boxes.append(template[i])
-	print(names, boxes)
+	#print(names, boxes)
 	for idx,i in enumerate(boxes):
 
-		dictionary[names[idx]]= pytesseract.image_to_string(image[int(i[1]):int(i[1]+i[3]), int(i[0]):int(i[0]+i[2])]).strip()
-		
-		fraud = comparePrice(names[idx], float(dictionary[names[idx]].replace(",","")))
+		dictionary[names[idx]]= pytesseract.image_to_string(image[int(i[1]):int(i[1]+i[3]), int(i[0]):int(i[0]+i[2])]).strip().replace("$","").replace("," , "").replace("}","").replace("{","").replace("&" , "")
+		#print(dictionary)
+		print(dictionary)
+		fraud = comparePrice(names[idx], float(dictionary[names[idx]]))
 		if fraud == True:
 			fraudList.append(names[idx])
 
@@ -174,7 +176,7 @@ def parseInvoice(path, templateID):
 		fraud= False
 	else:
 		fraud=True
-	print(fraudList)
+	print("fraud Commodities: " , fraudList)
 		
 
 
@@ -188,18 +190,21 @@ def parseInvoice(path, templateID):
 def comparePrice(commodity, price):
 	table = pd.read_csv("data/commodity-prices.csv")
 	for i in table.keys():
-		if commodity in i:
+		if commodity in i and commodity!="id":
 			commodity = i 
 			break
+	#print(commodity)
+
 	if commodity not in table.keys():
 		return False #if it is an unknown commodity, we cannot check
 	marketPrice =table[commodity][len(table[commodity])-1]
-	if marketPrice> 1.5* price or  marketPrice*1.5< price: 
+	if marketPrice> 1.1* price or  marketPrice*1.1< price: 
 		return True
 	return False
 
 def setTemplate(path):
 	image = cv2.imread(path)
+	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 ))
 	temp = Template(path)
 
 
@@ -230,7 +235,7 @@ def setTemplate(path):
 	    	temp.names[idx] = i.strip()
 	    
 	    
-	    print(result)
+	  #  print(result)
 
 	textExample=tk.Text(root, height=10)
 	textExample.pack()
@@ -240,10 +245,10 @@ def setTemplate(path):
 	btnRead.pack()
 
 	root.mainloop()
-	print(dict(zip(temp.names, temp.boxes)))
+	#print(dict(zip(temp.names, temp.boxes)))
 	templateCollection.insert_one(dict(zip(temp.names, temp.boxes))) 
 	temp.ObjectId = ObjectId(templateCollection.find_one(dict(zip(temp.names, temp.boxes)))['_id'])
-	print(temp.ObjectId)
+	#print(temp.ObjectId)
 	return temp
 
 
@@ -254,8 +259,15 @@ if 'archive' not in os.listdir():
 	cp.process()
 
 #print(comparePrice('Crude Oil',20))
-#temp=setTemplate("receipt.jpg")
+temp=setTemplate("template.png")
 
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-print(parseInvoice("testreceipt.jpg", "600c6f9b1f9224279f486e61"))
+
+for invoice in os.listdir("invoices"):
+#	print(invoice)
+	try:
+		print(parseInvoice("invoices/"+invoice, temp.ObjectId))
+	except:
+		print("fail")
+		pass
