@@ -151,7 +151,11 @@ class Template:
 
 def parseInvoice(path, templateID): 
 	dictionary={}
-	image = cv2.imread(path)
+	if(isinstance(path,str)):
+		image = cv2.imread(path)
+	else:
+		image = cv2.imdecode(np.fromstring(path.read(), np.uint8), 1)
+		#image = path
 	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 ))
 	template = templateCollection.find_one({'_id': ObjectId(templateID)})
 	boxes =[]
@@ -198,11 +202,12 @@ def comparePrice(commodity, price):
 	if commodity not in table.keys():
 		return False #if it is an unknown commodity, we cannot check
 	marketPrice =table[commodity][len(table[commodity])-1]
-	if marketPrice> 1.1* price or  marketPrice*1.1< price: 
+	if marketPrice> 1.5* price or  marketPrice*1.5< price: 
 		return True
 	return False
 
 def setTemplate(path):
+
 	image = cv2.imread(path)
 	image = cv2.resize(image, (image.shape[1]//2 , image.shape[0]//2 ))
 	temp = Template(path)
@@ -259,11 +264,11 @@ if 'archive' not in os.listdir():
 	cp.process()
 
 #print(comparePrice('Crude Oil',20))
-temp=setTemplate("template.png")
+#temp=setTemplate("template.png")
 
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-
+'''
 for invoice in os.listdir("invoices"):
 #	print(invoice)
 	try:
@@ -271,3 +276,4 @@ for invoice in os.listdir("invoices"):
 	except:
 		print("fail")
 		pass
+'''

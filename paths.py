@@ -17,12 +17,17 @@ def callSetTemplate():
 @app.route('/parseInvoice', methods = ['POST'])
 def callParseInvoice():
     uploaded_file = request.files['file']
+ 
     template = request.form['template']
-    print(request.form)
+    print("############################################################")
+    print(type(template) , type(uploaded_file) , template, uploaded_file)
+    print("############################################################")
+
 
     if uploaded_file.filename != '':
         res = parseInvoice(uploaded_file, template)
-        result = { "msg": "pass", result: res }
+        res[1]["_id"] = str(res[1]["_id"])
+        result = { "msg": "pass", "result": res }
         return jsonify(result)
     else:
         result = { "response": "error" }
