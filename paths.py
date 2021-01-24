@@ -1,4 +1,4 @@
-from invoiceAI import getText
+from invoiceAI import parseInvoice
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
@@ -17,11 +17,12 @@ def callSetTemplate():
 @app.route('/parseInvoice', methods = ['POST'])
 def callParseInvoice():
     uploaded_file = request.files['file']
-    template = "temp"
+    template = request.form['template']
+    print(request.form)
 
     if uploaded_file.filename != '':
-        res = getText(uploaded_file, template)
-        result = { res }
+        res = parseInvoice(uploaded_file, template)
+        result = { "msg": "pass", result: res }
         return jsonify(result)
     else:
         result = { "response": "error" }
