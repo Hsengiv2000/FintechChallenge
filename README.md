@@ -38,7 +38,7 @@ When an invoice is duplicated (it already exists in the database) the API will r
 
 ![Pic4](https://github.com/Hsengiv2000/FintechChallenge/blob/main/Gallery/fraudresult.PNG)
 
-## Duplicate Invoice
+## Falsified Prices
 When an invoice overstates commodity prices, the API will return "False" indicating potential fraud and suggesting further inspection.
 
 
